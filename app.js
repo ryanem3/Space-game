@@ -101,10 +101,7 @@ function drawGalaxy() {
       `rgba(255,255,255,${opacity})`;
 
     ctx.fillRect(
-      star.x,
-      star.y,
-      star.size,
-      star.size
+      star.x, star.y, star.size, star.size
     );
   }
 }
@@ -124,7 +121,7 @@ let lives = 3;
 let invincibleUntil = 0;
 
 // =====================================
-// ALIEN SETTINGS
+// ENEMY SETTINGS
 // =====================================
 
 const rows = 5;
@@ -170,19 +167,18 @@ let bossHealth = bossMaxHealth;
 
 let lastBossShot = 0;
 const bossShotCooldown = 1100;
+let bossMessageUntil = 0;
 
 // =====================================
-// GAME SETTINGS
+// GAME STATE
 // =====================================
 
 let score = 0;
 let gameOver = false;
 let gameWon = false;
 
-let bossMessageUntil = 0;
-
 // =====================================
-// CREATE ALIENS
+// CREATE ENEMIES
 // =====================================
 
 function createEnemies() {
@@ -235,9 +231,8 @@ function drawSpaceship() {
   ctx.fillRect(-46, 2, 20, 24);
   ctx.fillRect(26, 2, 20, 24);
 
-  // Main wings
+  // Left wing
   ctx.fillStyle = "#ff9c18";
-
   ctx.beginPath();
   ctx.moveTo(-12, -25);
   ctx.lineTo(-48, 22);
@@ -246,6 +241,7 @@ function drawSpaceship() {
   ctx.closePath();
   ctx.fill();
 
+  // Right wing
   ctx.beginPath();
   ctx.moveTo(12, -25);
   ctx.lineTo(48, 22);
@@ -260,7 +256,6 @@ function drawSpaceship() {
 
   // Main body
   ctx.fillStyle = "#ffb52e";
-
   ctx.beginPath();
   ctx.moveTo(0, -48);
   ctx.lineTo(-17, -12);
@@ -389,20 +384,20 @@ function getEnemyPosition(enemy) {
 
 function drawEnemies() {
   for (let enemy of enemies) {
-    if (enemy.alive) {
-      const position = getEnemyPosition(enemy);
+    if (!enemy.alive) continue;
 
-      drawEnemy(
-        position.x,
-        position.y,
-        enemy.row % 4
-      );
-    }
+    const position = getEnemyPosition(enemy);
+
+    drawEnemy(
+      position.x,
+      position.y,
+      enemy.row % 4
+    );
   }
 }
 
 // =====================================
-// DRAW GIANT ALIEN BOSS
+// DRAW GIANT BOSS
 // =====================================
 
 function drawBoss() {
@@ -412,7 +407,7 @@ function drawBoss() {
   ctx.shadowColor = "#bb44ff";
   ctx.shadowBlur = 25;
 
-  // Giant outer wings
+  // Wings
   ctx.fillStyle = "#51227d";
 
   ctx.beginPath();
@@ -431,7 +426,7 @@ function drawBoss() {
   ctx.closePath();
   ctx.fill();
 
-  // Armored body
+  // Body
   ctx.fillStyle = "#8632bc";
   ctx.beginPath();
   ctx.ellipse(0, 0, 90, 65, 0, 0, Math.PI * 2);
@@ -461,7 +456,7 @@ function drawBoss() {
   ctx.closePath();
   ctx.fill();
 
-  // Glowing red eyes
+  // Eyes
   ctx.shadowColor = "#ff2244";
   ctx.shadowBlur = 18;
   ctx.fillStyle = "#ff3355";
@@ -476,21 +471,21 @@ function drawBoss() {
 
   ctx.shadowBlur = 0;
 
-  // Dark pupils
   ctx.fillStyle = "#260b39";
   ctx.fillRect(-35, -14, 10, 12);
   ctx.fillRect(25, -14, 10, 12);
 
-  // Mechanical mouth
+  // Mouth
   ctx.fillStyle = "#230e38";
   ctx.fillRect(-32, 25, 64, 15);
 
   ctx.fillStyle = "#ffffff";
+
   for (let i = 0; i < 5; i++) {
     ctx.fillRect(-26 + i * 12, 25, 6, 9);
   }
 
-  // Tentacles
+  // Moving tentacles
   const sway = Math.sin(Date.now() / 250) * 8;
 
   ctx.strokeStyle = "#b66aff";
@@ -528,7 +523,12 @@ function drawBossHealth() {
   ctx.textAlign = "center";
   ctx.font = "bold 23px Arial";
   ctx.fillStyle = "#ffffff";
-  ctx.fillText("ALIEN OVERLORD", canvas.width / 2, 38);
+
+  ctx.fillText(
+    "ALIEN OVERLORD",
+    canvas.width / 2,
+    38
+  );
 
   ctx.fillStyle = "#291039";
   ctx.fillRect(x, y, barWidth, barHeight);
@@ -549,7 +549,7 @@ function drawBossHealth() {
 }
 
 // =====================================
-// PLAYER SHOOTING
+// PLAYER LASER
 // =====================================
 
 function shootLaser() {
@@ -557,6 +557,7 @@ function shootLaser() {
 
   const now = Date.now();
 
+  // Cooldown prevents rapid firing
   if (now - lastShot < shotCooldown) return;
 
   lastShot = now;
@@ -570,11 +571,13 @@ function shootLaser() {
 }
 
 // =====================================
-// ALIEN SHOOTING
+// ENEMY LASERS
 // =====================================
 
 function shootAlienLaser() {
-  const living = enemies.filter(enemy => enemy.alive);
+  const living = enemies.filter(
+    enemy => enemy.alive
+  );
 
   if (living.length === 0) return;
 
@@ -594,11 +597,10 @@ function shootAlienLaser() {
 }
 
 // =====================================
-// BOSS SHOOTING
+// BOSS LASERS
 // =====================================
 
 function shootBossLasers() {
-  // Three lasers spread outward
   for (let direction = -1; direction <= 1; direction++) {
     alienLasers.push({
       x: bossX - 4,
@@ -620,6 +622,7 @@ function updateLasers() {
     laser.y -= laserSpeed;
   }
 
+  // Remove lasers that leave the top
   lasers = lasers.filter(
     laser => laser.y + laser.height > 0
   );
@@ -682,7 +685,7 @@ function drawAlienLasers() {
 }
 
 // =====================================
-// START BOSS LEVEL
+// START BOSS BATTLE
 // =====================================
 
 function startBossBattle() {
@@ -700,7 +703,7 @@ function startBossBattle() {
 }
 
 // =====================================
-// UPDATE BOSS
+// MOVE BOSS
 // =====================================
 
 function updateBoss() {
@@ -725,22 +728,106 @@ function updateBoss() {
 }
 
 // =====================================
-// COLLISION DETECTION
+// RECTANGLE COLLISION DETECTION
+// =====================================
+
+// This is the function from your professor's lesson.
+// It checks whether two rectangles overlap.
+
+function intersectRect(r1, r2) {
+  return !(
+    r2.left > r1.right ||
+    r2.right < r1.left ||
+    r2.top > r1.bottom ||
+    r2.bottom < r1.top
+  );
+}
+
+// Turn a position and size into a rectangle
+function makeRect(x, y, width, height) {
+  return {
+    left: x,
+    top: y,
+    right: x + width,
+    bottom: y + height
+  };
+}
+
+// Rectangle around the player's spaceship
+function getHeroRect() {
+  return makeRect(
+    shipX - 40,
+    shipY - 45,
+    80,
+    80
+  );
+}
+
+// Rectangle around an alien
+function getAlienRect(enemy) {
+  const position = getEnemyPosition(enemy);
+
+  return makeRect(
+    position.x,
+    position.y,
+    50,
+    42
+  );
+}
+
+// =====================================
+// PLAYER TAKES DAMAGE
+// =====================================
+
+function damagePlayer() {
+  // Prevent multiple hits during invincibility
+  if (Date.now() < invincibleUntil) {
+    return false;
+  }
+
+  lives--;
+
+  invincibleUntil = Date.now() + 1500;
+
+  if (lives <= 0) {
+    lives = 0;
+    gameOver = true;
+  }
+
+  return true;
+}
+
+// =====================================
+// CHECK ALL COLLISIONS
 // =====================================
 
 function checkCollisions() {
-  // Player lasers hit aliens or boss
+
+  // -----------------------------------
+  // 1. Player lasers hit enemies
+  // -----------------------------------
+
   for (let laser of lasers) {
     if (laser.hit) continue;
 
+    const laserRect = makeRect(
+      laser.x,
+      laser.y,
+      laser.width,
+      laser.height
+    );
+
     if (bossActive) {
-      // Boss rectangular hitbox
-      if (
-        laser.x < bossX + 90 &&
-        laser.x + laser.width > bossX - 90 &&
-        laser.y < bossY + 65 &&
-        laser.y + laser.height > bossY - 65
-      ) {
+
+      // Player laser hits the boss
+      const bossRect = makeRect(
+        bossX - 90,
+        bossY - 65,
+        180,
+        130
+      );
+
+      if (intersectRect(laserRect, bossRect)) {
         laser.hit = true;
         bossHealth--;
         score += 20;
@@ -750,21 +837,19 @@ function checkCollisions() {
           bossActive = false;
           gameWon = true;
           score += 500;
+          break;
         }
       }
 
     } else {
+
+      // Player laser hits a normal alien
       for (let enemy of enemies) {
         if (!enemy.alive) continue;
 
-        const position = getEnemyPosition(enemy);
+        const alienRect = getAlienRect(enemy);
 
-        if (
-          laser.x < position.x + 60 &&
-          laser.x + laser.width > position.x - 10 &&
-          laser.y < position.y + 42 &&
-          laser.y + laser.height > position.y
-        ) {
+        if (intersectRect(laserRect, alienRect)) {
           enemy.alive = false;
           laser.hit = true;
           score += 10;
@@ -774,40 +859,73 @@ function checkCollisions() {
     }
   }
 
-  lasers = lasers.filter(laser => !laser.hit);
+  // Remove player lasers that hit something
+  lasers = lasers.filter(
+    laser => !laser.hit
+  );
 
-  // Alien and boss lasers hit spaceship
-  if (Date.now() >= invincibleUntil) {
-    for (let laser of alienLasers) {
-      if (
-        laser.x < shipX + 40 &&
-        laser.x + laser.width > shipX - 40 &&
-        laser.y < shipY + 35 &&
-        laser.y + laser.height > shipY - 45
-      ) {
+  if (gameWon) return;
+
+  // -----------------------------------
+  // 2. Enemy lasers hit the player
+  // -----------------------------------
+
+  for (let laser of alienLasers) {
+    const laserRect = makeRect(
+      laser.x,
+      laser.y,
+      laser.width,
+      laser.height
+    );
+
+    if (intersectRect(laserRect, getHeroRect())) {
+      if (damagePlayer()) {
         laser.hit = true;
-        lives--;
-
-        invincibleUntil = Date.now() + 1500;
-
-        if (lives <= 0) {
-          gameOver = true;
-        }
-
-        break;
       }
+
+      if (gameOver) break;
     }
   }
 
+  // Remove enemy lasers that hit the player
   alienLasers = alienLasers.filter(
     laser => !laser.hit
   );
 
-  // All 25 aliens defeated: begin boss battle
+  if (gameOver) return;
+
+  // -----------------------------------
+  // 3. Alien physically hits spaceship
+  // -----------------------------------
+
+  if (!bossActive) {
+    for (let enemy of enemies) {
+      if (!enemy.alive) continue;
+
+      if (
+        intersectRect(
+          getHeroRect(),
+          getAlienRect(enemy)
+        )
+      ) {
+        if (damagePlayer()) {
+          // Destroy the alien that collided
+          enemy.alive = false;
+        }
+
+        if (gameOver) break;
+      }
+    }
+  }
+
+  if (gameOver) return;
+
+  // -----------------------------------
+  // 4. All aliens defeated: start boss
+  // -----------------------------------
+
   if (
     !bossActive &&
-    !gameOver &&
-    !gameWon &&
     enemies.every(enemy => !enemy.alive)
   ) {
     startBossBattle();
@@ -839,10 +957,11 @@ window.addEventListener("keydown", function(event) {
     shootLaser();
   }
 
-  if (event.key.toLowerCase() === "r") {
-    if (gameOver || gameWon) {
-      restartGame();
-    }
+  if (
+    event.key.toLowerCase() === "r" &&
+    (gameOver || gameWon)
+  ) {
+    restartGame();
   }
 });
 
@@ -862,7 +981,7 @@ window.addEventListener("blur", function() {
 });
 
 // =====================================
-// UPDATE SPACESHIP
+// MOVE SPACESHIP
 // =====================================
 
 function updateSpaceship() {
@@ -876,17 +995,17 @@ function updateSpaceship() {
 }
 
 // =====================================
-// UPDATE ALIENS
+// MOVE ALIENS
 // =====================================
 
 function updateEnemies() {
-  enemyX += enemySpeed;
-
   const living = enemies.filter(
     enemy => enemy.alive
   );
 
   if (living.length === 0) return;
+
+  enemyX += enemySpeed;
 
   let leftEdge = Infinity;
   let rightEdge = -Infinity;
@@ -894,10 +1013,18 @@ function updateEnemies() {
   for (let enemy of living) {
     const position = getEnemyPosition(enemy);
 
-    leftEdge = Math.min(leftEdge, position.x - 10);
-    rightEdge = Math.max(rightEdge, position.x + 60);
+    leftEdge = Math.min(
+      leftEdge,
+      position.x
+    );
+
+    rightEdge = Math.max(
+      rightEdge,
+      position.x + 50
+    );
   }
 
+  // Reverse direction at screen edges
   if (
     (rightEdge >= canvas.width && enemySpeed > 0) ||
     (leftEdge <= 0 && enemySpeed < 0)
@@ -906,10 +1033,12 @@ function updateEnemies() {
     enemyY += enemyDrop;
   }
 
+  // If an alien reaches the bottom, game over
   for (let enemy of living) {
     const position = getEnemyPosition(enemy);
 
-    if (position.y + 42 >= shipY - 45) {
+    if (position.y + 42 >= canvas.height) {
+      enemy.alive = false;
       gameOver = true;
       break;
     }
@@ -930,9 +1059,11 @@ function drawScore() {
   ctx.fillText("Score: " + score, 20, 35);
 
   ctx.fillStyle = "#ff5577";
+
   ctx.fillText(
     "Lives: " + "♥ ".repeat(lives),
-    20, 70
+    20,
+    70
   );
 
   ctx.restore();
@@ -963,20 +1094,23 @@ function drawBossMessage() {
 }
 
 // =====================================
-// END SCREEN
+// GAME OVER AND VICTORY
 // =====================================
 
 function drawEndMessage() {
   ctx.save();
 
   ctx.fillStyle = "rgba(0,0,0,0.78)";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillRect(
+    0, 0, canvas.width, canvas.height
+  );
 
   ctx.textAlign = "center";
   ctx.font = "bold 55px Arial";
 
   if (gameWon) {
     ctx.fillStyle = "#00ff99";
+
     ctx.fillText(
       "GALAXY SAVED!",
       canvas.width / 2,
@@ -984,6 +1118,7 @@ function drawEndMessage() {
     );
   } else {
     ctx.fillStyle = "#ff4444";
+
     ctx.fillText(
       "GAME OVER",
       canvas.width / 2,
@@ -1029,6 +1164,7 @@ function restartGame() {
   lastShot = 0;
   lastAlienShot = Date.now();
   lastBossShot = 0;
+
   invincibleUntil = 0;
 
   moveLeft = false;
@@ -1038,6 +1174,7 @@ function restartGame() {
   bossHealth = bossMaxHealth;
   bossX = canvas.width / 2;
   bossY = 150;
+  bossSpeed = 2.5;
   bossMessageUntil = 0;
 
   gameOver = false;
@@ -1067,6 +1204,7 @@ function gameLoop() {
       const now = Date.now();
 
       if (
+        !gameOver &&
         now - lastAlienShot >= alienShotCooldown
       ) {
         shootAlienLaser();
@@ -1074,12 +1212,15 @@ function gameLoop() {
       }
     }
 
-    checkCollisions();
+    if (!gameOver) {
+      checkCollisions();
+    }
   }
 
-  // Draw game objects
+  // Draw spaceship
   drawSpaceship();
 
+  // Draw aliens or boss
   if (bossActive) {
     drawBoss();
     drawBossHealth();
@@ -1087,6 +1228,7 @@ function gameLoop() {
     drawEnemies();
   }
 
+  // Draw lasers and score
   drawLasers();
   drawAlienLasers();
   drawScore();
